@@ -13,15 +13,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
+import androidx.navigation.NavController
 import com.google.android.gms.location.*
 import com.google.android.gms.location.LocationServices
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.launch
 import java.util.*
 import kotlinx.coroutines.tasks.await
 
 @Composable
-fun AttendanceScreen(userId: String, userName: String) {
+fun AttendanceScreen(navController: NavController,userId: String, userName: String) {
     val context = LocalContext.current
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
     val db = remember { FirebaseFirestore.getInstance() }
@@ -36,7 +38,7 @@ fun AttendanceScreen(userId: String, userName: String) {
     val petrolPumpLatitude = 37.4219983  // Replace with actual coordinates
     val petrolPumpLongitude = -122.084   // Replace with actual coordinates
     val geofenceRadius = 100f  // 100 meters
-
+    val coroutineScope = rememberCoroutineScope()
     // Function to check if user is within geofence
     fun checkGeofence(location: Location) {
         val results = FloatArray(1)
@@ -155,9 +157,9 @@ fun AttendanceScreen(userId: String, userName: String) {
                     onClick = {
                         if (isWithinGeofence) {
                             // Launch coroutine to mark attendance
-                            androidx.compose.ui.platform.LocalContext.current.applicationScope.launch {
-                                markAttendance()
-                            }
+                           coroutineScope.launch {
+                               markAttendance()
+                           }
                         } else {
                             errorMessage = "You must be at the petrol pump to mark attendance"
                         }

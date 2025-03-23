@@ -8,10 +8,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.petroattendance" />
+                  <option name="mobileSdkAppId" value="1:475399205916:android:73e0b5b3e51acd5db71bd9" />
+                  <option name="projectId" value="petroattendance" />
+                  <option name="projectNumber" value="475399205916" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

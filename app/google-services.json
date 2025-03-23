@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "475399205916",
+    "project_id": "petroattendance",
+    "storage_bucket": "petroattendance.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:475399205916:android:73e0b5b3e51acd5db71bd9",
+        "android_client_info": {
+          "package_name": "com.petroattendance"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCSH9Kg654c1j48Hxl9evhm0c1MryiHbuA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

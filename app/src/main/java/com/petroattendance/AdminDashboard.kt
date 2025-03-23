@@ -11,8 +11,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.media3.exoplayer.offline.Download
+import androidx.navigation.NavController
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.util.*
@@ -35,7 +37,7 @@ data class AttendanceRecord(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AdminDashboard() {
+fun AdminDashboard(navController: NavController) {
     val db = remember { FirebaseFirestore.getInstance() }
     var employees by remember { mutableStateOf<List<Employee>>(emptyList()) }
     var attendanceRecords by remember { mutableStateOf<Map<String, List<AttendanceRecord>>>(emptyMap()) }
@@ -44,35 +46,8 @@ fun AdminDashboard() {
 
     // Date format for display
     val dateFormat = remember { SimpleDateFormat("dd MMM yyyy", Locale.getDefault()) }
-
+    val couroutineScope = rememberCoroutineScope()
     // Load employees
-    LaunchedEffect(Unit) {
-        try {
-            val snapshot = db.collection("users")
-                .whereNotEqualTo("role", "admin")
-                .get()
-                .await()
-
-            employees = snapshot.documents.mapNotNull { doc ->
-                val id = doc.id
-                val name = doc.getString("name") ?: return@mapNotNull null
-                val email = doc.getString("email") ?: return@mapNotNull null
-                val phone = doc.getString("phone") ?: ""
-                val role = doc.getString("role") ?: "employee"
-
-                Employee(id, name, email, phone, role)
-            }
-
-            // Load today's attendance
-            loadAttendanceForDate(selectedDate)
-        } catch (e: Exception) {
-            // Handle error
-        } finally {
-            isLoading = false
-        }
-    }
-
-    // Function to load attendance for a specific date
     suspend fun loadAttendanceForDate(calendar: Calendar) {
         isLoading = true
         try {
@@ -146,6 +121,36 @@ fun AdminDashboard() {
             // Handle error
         }
     }
+    LaunchedEffect(Unit) {
+        try {
+            val snapshot = db.collection("users")
+                .whereNotEqualTo("role", "admin")
+                .get()
+                .await()
+
+            employees = snapshot.documents.mapNotNull { doc ->
+                val id = doc.id
+                val name = doc.getString("name") ?: return@mapNotNull null
+                val email = doc.getString("email") ?: return@mapNotNull null
+                val phone = doc.getString("phone") ?: ""
+                val role = doc.getString("role") ?: "employee"
+
+                Employee(id, name, email, phone, role)
+            }
+
+            // Load today's attendance
+            couroutineScope.launch {
+                loadAttendanceForDate(selectedDate)
+            }
+
+        } catch (e: Exception) {
+            // Handle error
+        } finally {
+            isLoading = false
+        }
+    }
+    // Function to load attendance for a specific date
+
 
     Scaffold(
         topBar = {
