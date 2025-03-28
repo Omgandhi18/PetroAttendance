@@ -1,8 +1,11 @@
 package com.petroattendance
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -43,10 +46,12 @@ fun AdminDashboard(navController: NavController) {
     var attendanceRecords by remember { mutableStateOf<Map<String, List<AttendanceRecord>>>(emptyMap()) }
     var isLoading by remember { mutableStateOf(true) }
     var selectedDate by remember { mutableStateOf(Calendar.getInstance()) }
+    var showDatePicker by remember { mutableStateOf(false) }
 
     // Date format for display
     val dateFormat = remember { SimpleDateFormat("dd MMM yyyy", Locale.getDefault()) }
     val couroutineScope = rememberCoroutineScope()
+
     // Load employees
     suspend fun loadAttendanceForDate(calendar: Calendar) {
         isLoading = true
@@ -172,41 +177,102 @@ fun AdminDashboard(navController: NavController) {
                 .padding(padding)
                 .padding(16.dp)
         ) {
-            // Date selector
+            // Date selector with date picker and today button
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
                 modifier = Modifier.fillMaxWidth()
             ) {
+                // Previous Day Button
                 IconButton(onClick = {
                     val newDate = Calendar.getInstance()
                     newDate.time = selectedDate.time
                     newDate.add(Calendar.DAY_OF_MONTH, -1)
                     selectedDate = newDate
-                    // Refresh attendance data
+                    couroutineScope.launch {
+                        loadAttendanceForDate(newDate)
+                    }
                 }) {
                     Icon(Icons.Default.ArrowBack, contentDescription = "Previous Day")
                 }
 
-                Text(
-                    text = dateFormat.format(selectedDate.time),
-                    style = MaterialTheme.typography.titleLarge
-                )
+                // Date Display and Picker
+                Box {
+                    Text(
+                        text = dateFormat.format(selectedDate.time),
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.clickable { showDatePicker = true }
+                    )
 
-                IconButton(onClick = {
-                    val newDate = Calendar.getInstance()
-                    newDate.time = selectedDate.time
-                    newDate.add(Calendar.DAY_OF_MONTH, 1)
-                    selectedDate = newDate
-                    // Refresh attendance data
-                }) {
-                    Icon(Icons.Default.ArrowForward, contentDescription = "Next Day")
+                    if (showDatePicker) {
+                        val datePickerState = rememberDatePickerState()
+                        DatePickerDialog(
+                            onDismissRequest = { showDatePicker = false },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    if (datePickerState.selectedDateMillis != null){
+                                        val newDate = dateFormat.format(datePickerState.selectedDateMillis)
+                                        println(newDate)
+                                        selectedDate = Calendar.getInstance().apply { time =
+                                            dateFormat.parse(newDate)!!
+                                        }
+                                        couroutineScope.launch {
+                                            loadAttendanceForDate(selectedDate)
+                                        }
+                                        showDatePicker = false
+                                    }
+                                }) {
+                                    Text("OK")
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showDatePicker = false }) {
+                                    Text("Cancel")
+                                }
+                            }
+
+                        ) {
+                            DatePicker(
+                                state = datePickerState,
+                                modifier = Modifier
+                                    .padding(8.dp)
+                                    .verticalScroll(
+                                        rememberScrollState()
+                                    ),
+
+                            )
+                        }
+                    }
+                }
+
+                // Today Button and Next Day Button
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Today Button
+                    IconButton(onClick = {
+                        val today = Calendar.getInstance()
+                        selectedDate = today
+                        couroutineScope.launch {
+                            loadAttendanceForDate(today)
+                        }
+                    }) {
+                        Icon(Icons.Default.DateRange, contentDescription = "Today")
+                    }
+
+                    // Next Day Button
+                    IconButton(onClick = {
+                        val newDate = Calendar.getInstance()
+                        newDate.time = selectedDate.time
+                        newDate.add(Calendar.DAY_OF_MONTH, 1)
+                        selectedDate = newDate
+                        couroutineScope.launch {
+                            loadAttendanceForDate(newDate)
+                        }
+                    }) {
+                        Icon(Icons.Default.ArrowForward, contentDescription = "Next Day")
+                    }
                 }
             }
-
             Spacer(modifier = Modifier.height(16.dp))
-
-            // Attendance list
             if (isLoading) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -214,7 +280,8 @@ fun AdminDashboard(navController: NavController) {
                 ) {
                     CircularProgressIndicator()
                 }
-            } else {
+            }
+            else{
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -226,7 +293,7 @@ fun AdminDashboard(navController: NavController) {
                             else -> "Absent"
                         }
 
-                        val attendanceColor = when(attendanceStatus) {
+                        val attendanceColor = when (attendanceStatus) {
                             "Present" -> MaterialTheme.colorScheme.primary
                             "On Leave" -> MaterialTheme.colorScheme.tertiary
                             else -> MaterialTheme.colorScheme.error
@@ -280,12 +347,25 @@ fun AdminDashboard(navController: NavController) {
                                             AlertDialog(
                                                 onDismissRequest = { showConfirmDialog = false },
                                                 title = { Text("Mark On Leave") },
-                                                text = { Text("Mark ${employee.name} as on leave for ${dateFormat.format(selectedDate.time)}?") },
+                                                text = {
+                                                    Text(
+                                                        "Mark ${employee.name} as on leave for ${
+                                                            dateFormat.format(
+                                                                selectedDate.time
+                                                            )
+                                                        }?"
+                                                    )
+                                                },
                                                 confirmButton = {
                                                     Button(
                                                         onClick = {
                                                             showConfirmDialog = false
-                                                            // Mark on leave
+                                                            couroutineScope.launch {
+                                                                markEmployeeOnLeave(
+                                                                    employee.id,
+                                                                    employee.name
+                                                                )
+                                                            }
                                                         }
                                                     ) {
                                                         Text("Confirm")
@@ -309,4 +389,10 @@ fun AdminDashboard(navController: NavController) {
             }
         }
     }
+}
+
+fun Date.toCalendar(): Calendar {
+    val calendar = Calendar.getInstance()
+    calendar.time = this
+    return calendar
 }

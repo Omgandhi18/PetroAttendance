@@ -23,7 +23,7 @@ import java.util.*
 import kotlinx.coroutines.tasks.await
 
 @Composable
-fun AttendanceScreen(navController: NavController,userId: String, userName: String) {
+fun AttendanceScreen(navController: NavController) {
     val context = LocalContext.current
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
     val db = remember { FirebaseFirestore.getInstance() }
@@ -33,21 +33,33 @@ fun AttendanceScreen(navController: NavController,userId: String, userName: Stri
     var isLoading by remember { mutableStateOf(false) }
     var attendanceMarked by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-
+    val auth = remember {
+        AuthRepository()
+    }
+    val currentUser = auth.getCurrentUser()
+    val userId = currentUser?.id
+    val userName = currentUser?.name
     // Coordinates of the petrol pump
-    val petrolPumpLatitude = 37.4219983  // Replace with actual coordinates
-    val petrolPumpLongitude = -122.084   // Replace with actual coordinates
+    val petrolPumpLatitude = 21.8704003  // Replace with actual coordinates
+    val petrolPumpLongitude = 73.5024621   // Replace with actual coordinates
     val geofenceRadius = 100f  // 100 meters
     val coroutineScope = rememberCoroutineScope()
+
+    // Check if attendance is already marked for today
+    var isAttendanceAlreadyMarked by remember { mutableStateOf(false) }
     // Function to check if user is within geofence
     fun checkGeofence(location: Location) {
         val results = FloatArray(1)
+        println(location.latitude)
+        println(location.longitude)
         Location.distanceBetween(
             location.latitude, location.longitude,
             petrolPumpLatitude, petrolPumpLongitude,
             results
         )
         isWithinGeofence = results[0] <= geofenceRadius
+        println(results[0])
+        println(isWithinGeofence)
     }
 
     // Function to mark attendance
@@ -70,24 +82,26 @@ fun AttendanceScreen(navController: NavController,userId: String, userName: Stri
             val day = calendar.get(Calendar.DAY_OF_MONTH)
 
             // Store attendance in a structured way for easy retrieval
-            db.collection("attendance")
-                .document("$year")
-                .collection("$month")
-                .document("$day")
-                .collection("employees")
-                .document(userId)
-                .set(attendanceData)
-                .await()
+            if (userId != null) {
+                db.collection("attendance")
+                    .document("$year")
+                    .collection("$month")
+                    .document("$day")
+                    .collection("employees")
+                    .document(userId)
+                    .set(attendanceData)
+                    .await()
 
-            // Also store in user's own collection for quick access
-            db.collection("users")
-                .document(userId)
-                .collection("attendance")
-                .document("$year-$month-$day")
-                .set(attendanceData)
-                .await()
+                db.collection("users")
+                    .document(userId)
+                    .collection("attendance")
+                    .document("$year-$month-$day")
+                    .set(attendanceData)
+                    .await()
+            }
 
-            attendanceMarked = true
+
+            isAttendanceAlreadyMarked = true
             errorMessage = null
         } catch (e: Exception) {
             errorMessage = "Failed to mark attendance: ${e.message}"
@@ -98,6 +112,29 @@ fun AttendanceScreen(navController: NavController,userId: String, userName: Stri
 
     // Effect to get location
     LaunchedEffect(Unit) {
+        val calendar = Calendar.getInstance()
+        val year = calendar.get(Calendar.YEAR)
+        val month = calendar.get(Calendar.MONTH) + 1
+        val day = calendar.get(Calendar.DAY_OF_MONTH)
+
+        if (userId != null) {
+            try {
+                val attendanceDoc = db.collection("attendance")
+                    .document("$year")
+                    .collection("$month")
+                    .document("$day")
+                    .collection("employees")
+                    .document(userId)
+                    .get()
+                    .await()
+
+                isAttendanceAlreadyMarked = attendanceDoc.exists()
+                print(isAttendanceAlreadyMarked)
+            } catch (e: Exception) {
+                errorMessage = "Error checking attendance: ${e.message}"
+            }
+        }
+
         if (ActivityCompat.checkSelfPermission(
                 context,
                 Manifest.permission.ACCESS_FINE_LOCATION
@@ -125,7 +162,7 @@ fun AttendanceScreen(navController: NavController,userId: String, userName: Stri
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        if (attendanceMarked) {
+        if (isAttendanceAlreadyMarked) {
             Icon(
                 imageVector = androidx.compose.material.icons.Icons.Filled.CheckCircle,
                 contentDescription = "Attendance Marked",
@@ -134,8 +171,8 @@ fun AttendanceScreen(navController: NavController,userId: String, userName: Stri
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Attendance marked successfully!",
-                style = MaterialTheme.typography.headlineSmall
+                text = "Attendance already marked for today",
+                style = MaterialTheme.typography.bodyLarge
             )
         } else {
             if (isLoading) {

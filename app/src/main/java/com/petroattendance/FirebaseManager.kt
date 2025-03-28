@@ -191,9 +191,9 @@ fun LoginScreen(navController: NavController) {
 
                             // Navigate based on user role
                             if (user?.role == "admin") {
-                                navController.navigate("admin_dashboard")
+                                navController.navigate(Screen.AdminHome.route)
                             } else {
-                                navController.navigate("employee_dashboard/${user?.id}")
+                                navController.navigate(Screen.MarkAttendance.route)
                             }
                         } else {
                             errorMessage = result.exceptionOrNull()?.message ?: "Authentication failed"

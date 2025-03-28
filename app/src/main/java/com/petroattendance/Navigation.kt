@@ -16,13 +16,13 @@ sealed class Screen(val route: String) {
     object Login : Screen("login")
 
     // Employee screens
-    object EmployeeHome : Screen("employee_home")
+    object AttendanceScreen : Screen("attendance_screen")
     object MarkAttendance : Screen("mark_attendance")
     object MonthlyAttendance : Screen("monthly_attendance")
     object YearlyAttendance : Screen("yearly_attendance")
 
     // Admin screens
-    object AdminHome : Screen("admin_home")
+    object AdminHome : Screen("admin_dashboard")
     object EmployeeManagement : Screen("employee_management")
     object Reports : Screen("reports")
 }
@@ -40,7 +40,7 @@ fun AppNavHost(navController: NavHostController) {
 
         // Employee screens
         composable(route = Screen.MarkAttendance.route) {
-            AttendanceScreen(navController = navController, userId = "0", userName = "Om")
+            AttendanceScreen(navController = navController)
         }
 
         composable(route = Screen.MonthlyAttendance.route) {
