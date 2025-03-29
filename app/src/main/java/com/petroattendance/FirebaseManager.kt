@@ -1,11 +1,28 @@
 package com.petroattendance
 
 import android.content.Context
-import android.content.Intent
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -94,7 +111,34 @@ class AuthRepository {
             name = firebaseUser.displayName ?: ""
         )
     }
+    suspend fun getUserRole(userId: String): String? {
+        return try {
+            val userDoc = db.collection("users").document(userId).get().await()
+            userDoc.getString("role")
+        } catch (e: Exception) {
+            null
+        }
+    }
 
+    suspend fun getUserFromFirestore(userId: String): User? {
+        return try {
+            val userDoc = db.collection("users").document(userId).get().await()
+
+            if (userDoc.exists()) {
+                User(
+                    id = userId,
+                    name = userDoc.getString("name") ?: "",
+                    email = userDoc.getString("email") ?: "",
+                    phone = userDoc.getString("phone") ?: "",
+                    role = userDoc.getString("role") ?: "employee"
+                )
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
     // Admin functions to create new employees
     suspend fun createEmployee(name: String, email: String, password: String, phone: String): Result<String> {
         return try {
@@ -120,6 +164,7 @@ class AuthRepository {
 }
 
 // Login Screen
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(navController: NavController) {
@@ -135,6 +180,23 @@ fun LoginScreen(navController: NavController) {
     // Initialize Firebase
     LaunchedEffect(Unit) {
         FirebaseManager.getInstance(context).initialize()
+
+        // Check if user is already logged in (handles case of direct access to login page)
+        val currentUser = auth.getCurrentUser()
+        if (currentUser != null) {
+            coroutineScope.launch {
+                val userRole = auth.getUserRole(currentUser.id)
+                if (userRole == "admin") {
+                    navController.navigate(Screen.AdminHome.route) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                    }
+                } else {
+                    navController.navigate(Screen.MarkAttendance.route) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                    }
+                }
+            }
+        }
     }
 
     Column(
@@ -191,9 +253,13 @@ fun LoginScreen(navController: NavController) {
 
                             // Navigate based on user role
                             if (user?.role == "admin") {
-                                navController.navigate(Screen.AdminHome.route)
+                                navController.navigate(Screen.AdminHome.route) {
+                                    popUpTo(Screen.Login.route) { inclusive = true }
+                                }
                             } else {
-                                navController.navigate(Screen.MarkAttendance.route)
+                                navController.navigate(Screen.MarkAttendance.route) {
+                                    popUpTo(Screen.Login.route) { inclusive = true }
+                                }
                             }
                         } else {
                             errorMessage = result.exceptionOrNull()?.message ?: "Authentication failed"

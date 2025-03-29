@@ -2,14 +2,10 @@ package com.petroattendance
 
 
 import YearlyAttendanceScreen
-import android.window.SplashScreen
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.petroattendance.AdminDashboard
-import com.petroattendance.AttendanceRecord
-import com.petroattendance.Employee
 
 sealed class Screen(val route: String) {
     object Splash : Screen("splash")
@@ -22,7 +18,7 @@ sealed class Screen(val route: String) {
     object YearlyAttendance : Screen("yearly_attendance")
 
     // Admin screens
-    object AdminHome : Screen("admin_dashboard")
+    object AdminHome : Screen("admin_main_screen")
     object EmployeeManagement : Screen("employee_management")
     object Reports : Screen("reports")
 }
@@ -31,16 +27,18 @@ sealed class Screen(val route: String) {
 fun AppNavHost(navController: NavHostController) {
     NavHost(
         navController = navController,
-        startDestination = Screen.Login.route
+        startDestination = Screen.Splash.route
     ) {
-
+        composable(route = Screen.Splash.route) {
+            SplashScreen(navController = navController)
+        }
         composable(route = Screen.Login.route) {
             LoginScreen(navController = navController)
         }
 
         // Employee screens
         composable(route = Screen.MarkAttendance.route) {
-            AttendanceScreen(navController = navController)
+            EmployeeMainScreen(navController = navController)
         }
 
         composable(route = Screen.MonthlyAttendance.route) {
@@ -53,7 +51,7 @@ fun AppNavHost(navController: NavHostController) {
 
         // Admin screens
         composable(route = Screen.AdminHome.route) {
-            AdminDashboard(navController = navController)
+            AdminMainScreen(navController = navController)
         }
 
 //        composable(route = Screen.EmployeeManagement.route) {

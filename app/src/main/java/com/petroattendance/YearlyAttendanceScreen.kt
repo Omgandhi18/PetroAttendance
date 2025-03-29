@@ -207,11 +207,11 @@ fun YearlyAttendanceScreen(navController: NavController, userId: String) {
                     Spacer(modifier = Modifier.height(8.dp))
 
                     LinearProgressIndicator(
-                        progress = attendancePercentage / 100f,
+                        progress = { attendancePercentage / 100f },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(12.dp)
-                            .clip(MaterialTheme.shapes.small)
+                            .clip(MaterialTheme.shapes.small),
                     )
                 }
             }
@@ -266,11 +266,11 @@ fun YearlyAttendanceScreen(navController: NavController, userId: String) {
                             Spacer(modifier = Modifier.height(4.dp))
 
                             LinearProgressIndicator(
-                                progress = attendanceRate,
+                                progress = { attendanceRate },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(6.dp)
-                                    .clip(MaterialTheme.shapes.small)
+                                    .clip(MaterialTheme.shapes.small),
                             )
 
                             Spacer(modifier = Modifier.height(4.dp))

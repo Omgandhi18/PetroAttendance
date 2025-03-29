@@ -349,11 +349,11 @@ fun MonthlyAttendanceScreen(navController: NavController,userId: String) {
                     }
 
                     LinearProgressIndicator(
-                        progress = attendancePercentage / 100f,
+                        progress = { attendancePercentage / 100f },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(8.dp)
-                            .clip(MaterialTheme.shapes.small)
+                            .clip(MaterialTheme.shapes.small),
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))

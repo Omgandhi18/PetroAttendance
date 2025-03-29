@@ -67,6 +67,10 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation("androidx.compose.material3:material3:1.3.1")
+    implementation("androidx.compose.material3:material3-window-size-class:1.3.1")
+    implementation("androidx.compose.material:material-icons-core:1.5.4") // Core icons
+    implementation("androidx.compose.material:material-icons-extended:1.5.4")
     implementation(libs.play.services.location)
     implementation(libs.firebase.firestore.ktx)
     implementation(libs.firebase.common.ktx)
