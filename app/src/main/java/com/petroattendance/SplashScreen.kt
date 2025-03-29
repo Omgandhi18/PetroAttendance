@@ -1,5 +1,4 @@
 package com.petroattendance
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,13 +17,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 @Composable
@@ -55,8 +52,8 @@ fun SplashScreen(navController: NavController) {
 
         // For now, using text as placeholder
         Text(
-            text = "Petrol Pump Attendance",
-            style = MaterialTheme.typography.headlineMedium,
+            text = "Arvindkant Gandhi Attendance",
+            style = MaterialTheme.typography.titleLarge,
             textAlign = TextAlign.Center
         )
 

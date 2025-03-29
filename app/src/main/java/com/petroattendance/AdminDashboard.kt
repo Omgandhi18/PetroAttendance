@@ -27,7 +27,6 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -305,22 +304,6 @@ fun AdminDashboard(navController: NavController,padding: PaddingValues) {
                     text = "Manage employee attendance",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            IconButton(
-                onClick = {
-                    // Export report functionality
-                },
-                modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer)
-                    .padding(4.dp)
-            ) {
-                Icon(
-                    Icons.Default.Share,
-                    contentDescription = "Export Report",
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }
         }

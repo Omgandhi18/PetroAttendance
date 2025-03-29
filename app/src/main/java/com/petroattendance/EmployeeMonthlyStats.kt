@@ -20,7 +20,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -214,21 +213,7 @@ fun AdminStatsScreen(navController: NavController, padding: PaddingValues) {
                 )
             }
 
-            IconButton(
-                onClick = {
-                    // Export functionality
-                },
-                modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer)
-                    .padding(4.dp)
-            ) {
-                Icon(
-                    Icons.Default.Share,
-                    contentDescription = "Export Report",
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            }
+
         }
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -513,9 +498,14 @@ fun AdminStatsScreen(navController: NavController, padding: PaddingValues) {
                     }
 
                     Card(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().clickable {
+                            // Navigate to detailed employee attendance screen
+                            navController.navigate(
+                                "employee_attendance_detail/${stats.userId}/${stats.name}/${selectedMonth}/${selectedYear}"
+                            )
+                        },
                         shape = RoundedCornerShape(12.dp),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                     ) {
                         Column(
                             modifier = Modifier
