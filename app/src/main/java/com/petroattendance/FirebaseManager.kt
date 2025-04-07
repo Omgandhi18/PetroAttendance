@@ -80,8 +80,11 @@ class AuthRepository {
             val userId = authResult.user?.uid ?: return Result.failure(Exception("Authentication failed"))
 
             // Get user details from Firestore
-            val userDoc = db.collection("users").document(userId).get().await()
+            var userDoc = db.collection("users").document(userId).get().await()
 
+            if (!userDoc.exists()) {
+                userDoc = db.collection("admin").document(userId).get().await()
+            }
             if (userDoc.exists()) {
                 val user = User(
                     id = userId,
@@ -113,7 +116,13 @@ class AuthRepository {
     }
     suspend fun getUserRole(userId: String): String? {
         return try {
-            val userDoc = db.collection("users").document(userId).get().await()
+            var userDoc = db.collection("users").document(userId).get().await()
+
+            // If not found, check in admin collection
+            if (!userDoc.exists()) {
+                userDoc = db.collection("admin").document(userId).get().await()
+            }
+
             userDoc.getString("role")
         } catch (e: Exception) {
             null
@@ -122,7 +131,12 @@ class AuthRepository {
 
     suspend fun getUserFromFirestore(userId: String): User? {
         return try {
-            val userDoc = db.collection("users").document(userId).get().await()
+            var userDoc = db.collection("users").document(userId).get().await()
+
+            // If not found, check in admin collection
+            if (!userDoc.exists()) {
+                userDoc = db.collection("admin").document(userId).get().await()
+            }
 
             if (userDoc.exists()) {
                 User(

@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
@@ -114,15 +115,15 @@ fun AdminMainScreen(navController: NavController) {
         }
     ) { padding ->
         when (selectedTab) {
-            0 -> AdminDashboard(navController,padding)
-            1 -> AdminStatsScreen(navController,padding)
-            2 -> AdminProfileScreen(navController,padding)
+            0 -> AdminDashboard(navController,padding, isVisible = selectedTab == 0)
+            1 -> AdminStatsScreen(navController,padding, isVisible = selectedTab == 1)
+            2 -> AdminProfileScreen(navController,padding, isVisible = selectedTab == 2)
         }
     }
 }
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AdminDashboard(navController: NavController,padding: PaddingValues) {
+fun AdminDashboard(navController: NavController,padding: PaddingValues,isVisible: Boolean) {
     val db = remember { FirebaseFirestore.getInstance() }
     var employees by remember { mutableStateOf<List<Employee>>(emptyList()) }
     var attendanceRecords by remember { mutableStateOf<Map<String, List<AttendanceRecord>>>(emptyMap()) }
@@ -139,6 +140,7 @@ fun AdminDashboard(navController: NavController,padding: PaddingValues) {
     // Date format for display
     val dateFormat = remember { SimpleDateFormat("dd MMM yyyy", Locale.getDefault()) }
     val coroutineScope = rememberCoroutineScope()
+    val timeFormat = remember { SimpleDateFormat("hh:mm a", Locale.getDefault()) }
 
     // Functions for loading attendance, marking leave, etc. remain the same
     // Just adding calculation of stats
@@ -305,6 +307,13 @@ fun AdminDashboard(navController: NavController,padding: PaddingValues) {
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+            Button(
+                onClick = { navController.navigate("admin_employees") },
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Icon(Icons.Default.People, contentDescription = "Manage Employees")
+                Spacer(modifier = Modifier.width(4.dp))
             }
         }
 
@@ -620,6 +629,16 @@ fun AdminDashboard(navController: NavController,padding: PaddingValues) {
                                             style = MaterialTheme.typography.bodyMedium,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        val attendanceTime = attendanceRecords[employee.id]?.firstOrNull()?.timestamp?.toDate()?.let {
+                                            timeFormat.format(it)
+                                        } ?: "Not recorded"
+
+                                        Text(
+                                            text = attendanceTime,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
                                     }
                                 }
 
@@ -681,8 +700,7 @@ fun AdminDashboard(navController: NavController,padding: PaddingValues) {
                                                         onClick = {
                                                             showConfirmDialog = false
                                                             coroutineScope.launch {
-                                                                // Function to mark employee on leave
-                                                                // Implementation remains the same
+                                                               markEmployeeOnLeave(employeeId = employee.id, employeeName = employee.name)
                                                             }
                                                         }
                                                     ) {

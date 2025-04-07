@@ -87,8 +87,8 @@ fun EmployeeMainScreen(navController: NavController) {
         }
     ) { padding ->
         when (selectedTab) {
-            0 -> EnhancedAttendanceScreen(navController,padding)
-            1 -> ProfileScreen(navController,padding)
+            0 -> EnhancedAttendanceScreen(navController, padding, isVisible = selectedTab == 0)
+            1 -> ProfileScreen(navController, padding, isVisible = selectedTab == 1)
         }
     }
 }
@@ -150,7 +150,7 @@ class LocationClient(private val context: android.content.Context) {
 
 // Enhanced attendance screen with better UI and continuous location tracking
 @Composable
-fun EnhancedAttendanceScreen(navController: NavController,padding: PaddingValues) {
+fun EnhancedAttendanceScreen(navController: NavController,padding: PaddingValues, isVisible: Boolean) {
     val context = LocalContext.current
     val locationClient = remember { LocationClient(context) }
     val db = remember { FirebaseFirestore.getInstance() }
@@ -164,8 +164,11 @@ fun EnhancedAttendanceScreen(navController: NavController,padding: PaddingValues
     val auth = remember { AuthRepository() }
     val currentUser = auth.getCurrentUser()
     val userId = currentUser?.id
-    val userName = currentUser?.name
-
+    var userName by remember {
+        mutableStateOf("")
+    }
+    val getUserData = db.collection("users")
+    var wasVisible by remember { mutableStateOf(false) }
     // Coordinates of the petrol pump
     val petrolPumpLatitude = 21.8704003
     val petrolPumpLongitude = 73.5024621
@@ -277,6 +280,15 @@ fun EnhancedAttendanceScreen(navController: NavController,padding: PaddingValues
                     .get()
                     .await()
 
+                val userDoc = getUserData.document(currentUser.id).get().await()
+                println(userDoc)
+                if (userDoc != null && userDoc.exists()) {
+                    userName = userDoc.getString("name") ?: "N/A"
+                } else {
+                    userName = "N/A"
+                }
+                wasVisible = true
+
                 isAttendanceAlreadyMarked = attendanceDoc.exists()
 
                 if (isAttendanceAlreadyMarked) {
@@ -290,6 +302,7 @@ fun EnhancedAttendanceScreen(navController: NavController,padding: PaddingValues
                 errorMessage = "Error checking attendance: ${e.message}"
             }
         }
+        wasVisible = isVisible
     }
 
     Surface(

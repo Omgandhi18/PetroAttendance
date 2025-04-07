@@ -48,16 +48,20 @@ import java.util.Date
 
 // New Profile Screen
 @Composable
-fun ProfileScreen(navController: NavController,padding: PaddingValues) {
+fun ProfileScreen(navController: NavController,padding: PaddingValues, isVisible: Boolean) {
     val coroutineScope = rememberCoroutineScope()
     val auth = remember { AuthRepository() }
     val currentUser = auth.getCurrentUser()
     val db = remember { FirebaseFirestore.getInstance() }
-
+    var name by remember {
+        mutableStateOf("")
+    }
     var attendanceCount by remember { mutableStateOf(0) }
-
+    val getUserData = db.collection("users")
+    var wasVisible by remember { mutableStateOf(false) }
     // Get attendance count
     LaunchedEffect(Unit) {
+
         if (currentUser?.id != null) {
             try {
                 val calendar = Calendar.getInstance()
@@ -72,11 +76,21 @@ fun ProfileScreen(navController: NavController,padding: PaddingValues) {
                     .get()
                     .await()
 
+                // Get user name (now inside the coroutine)
+                val userDoc = getUserData.document(currentUser.id).get().await()
+                println(userDoc)
+                if (userDoc != null && userDoc.exists()) {
+                    name = userDoc.getString("name") ?: "N/A"
+                } else {
+                    name = "N/A"
+                }
+                wasVisible = true
                 attendanceCount = attendanceQuery.documents.size
             } catch (e: Exception) {
                 // Handle error
             }
         }
+        wasVisible = isVisible
     }
 
     Surface(
@@ -125,7 +139,7 @@ fun ProfileScreen(navController: NavController,padding: PaddingValues) {
                 ) {
                     ProfileInfoRow(
                         label = "Name",
-                        value = currentUser?.name ?: "N/A",
+                        value = name,
                         icon = Icons.Filled.Person
                     )
 

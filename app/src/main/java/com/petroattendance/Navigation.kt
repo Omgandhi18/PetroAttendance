@@ -65,6 +65,9 @@ fun AppNavHost(navController: NavHostController) {
         composable(route = Screen.AdminHome.route) {
             AdminMainScreen(navController = navController)
         }
+        composable("admin_employees") {
+            AdminEmployeeManagementScreen(navController, PaddingValues())
+        }
 
 //        composable(route = Screen.EmployeeManagement.route) {
 //            AdminUserManagementScreen(navController = navController)

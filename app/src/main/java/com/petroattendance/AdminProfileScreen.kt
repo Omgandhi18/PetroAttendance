@@ -42,21 +42,24 @@ import kotlinx.coroutines.tasks.await
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AdminProfileScreen(navController: NavController,padding: PaddingValues) {
+fun AdminProfileScreen(navController: NavController,padding: PaddingValues, isVisible: Boolean) {
     val auth = remember { AuthRepository() }
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
     var user by remember { mutableStateOf<User?>(null) }
     var isLoading by remember { mutableStateOf(true) }
-
+    var userName by remember {
+        mutableStateOf("")
+    }
+    var wasVisible by remember { mutableStateOf(false) }
     // Load user data
     LaunchedEffect(Unit) {
         val currentUser = auth.getCurrentUser()
         if (currentUser != null) {
             try {
                 val db = FirebaseFirestore.getInstance()
-                val userDoc = db.collection("users").document(currentUser.id).get().await()
+                val userDoc = db.collection("admin").document(currentUser.id).get().await()
 
                 if (userDoc.exists()) {
                     user = User(

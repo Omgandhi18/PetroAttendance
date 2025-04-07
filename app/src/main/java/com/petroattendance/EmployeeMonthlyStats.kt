@@ -60,7 +60,7 @@ data class EmployeeMonthlyStats(
     val totalWorkingDays: Int
 )
 @Composable
-fun AdminStatsScreen(navController: NavController, padding: PaddingValues) {
+fun AdminStatsScreen(navController: NavController, padding: PaddingValues, isVisible: Boolean) {
     val db = remember { FirebaseFirestore.getInstance() }
     var employees by remember { mutableStateOf<List<Employee>>(emptyList()) }
     var employeeStats by remember { mutableStateOf<Map<String, EmployeeMonthlyStats>>(emptyMap()) }
