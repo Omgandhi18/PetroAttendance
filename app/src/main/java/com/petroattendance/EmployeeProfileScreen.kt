@@ -1,5 +1,6 @@
 package com.petroattendance
 
+import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
@@ -37,18 +39,75 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.util.Calendar
-import java.util.Date
 
-// New Profile Screen
+// Compatibility helper
+object CompatUtils {
+    val isNewAndroid = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S // Android 12+
+
+    // Define fallback colors
+    val primaryColor = Color(0xFF6200EE)
+    val primaryVariantColor = Color(0xFF3700B3)
+    val secondaryColor = Color(0xFF03DAC6)
+    val secondaryVariantColor = Color(0xFF018786)
+    val surfaceColor = Color.White
+    val backgroundColor = Color.White
+    val errorColor = Color(0xFFB00020)
+    val errorContainerColor = Color(0xFFFFDAD6)
+    val onErrorContainerColor = Color(0xFFB3261E)
+    val secondaryContainerColor = Color(0xFFCEFAF8)
+    val onSecondaryContainerColor = Color(0xFF005048)
+    val onSurfaceVariantColor = Color(0xFF7A7A7A)
+
+    // Legacy style helpers
+    val headlineMedium = TextStyle(
+        fontWeight = FontWeight.Medium,
+        fontSize = 24.sp,
+        lineHeight = 32.sp
+    )
+
+    val titleMedium = TextStyle(
+        fontWeight = FontWeight.Medium,
+        fontSize = 16.sp,
+        lineHeight = 24.sp
+    )
+
+    val headlineLarge = TextStyle(
+        fontWeight = FontWeight.Bold,
+        fontSize = 28.sp,
+        lineHeight = 36.sp
+    )
+
+    val bodySmall = TextStyle(
+        fontWeight = FontWeight.Normal,
+        fontSize = 12.sp,
+        lineHeight = 16.sp
+    )
+
+    val bodyLarge = TextStyle(
+        fontWeight = FontWeight.Normal,
+        fontSize = 16.sp,
+        lineHeight = 24.sp
+    )
+
+    // Icon compatibility
+    fun getLogoutIcon(): ImageVector {
+        return if (isNewAndroid) Icons.Filled.Logout else Icons.Filled.ExitToApp
+    }
+}
+
 @Composable
-fun ProfileScreen(navController: NavController,padding: PaddingValues, isVisible: Boolean) {
+fun ProfileScreen(navController: NavController, padding: PaddingValues, isVisible: Boolean) {
     val coroutineScope = rememberCoroutineScope()
     val auth = remember { AuthRepository() }
     val currentUser = auth.getCurrentUser()
@@ -59,24 +118,28 @@ fun ProfileScreen(navController: NavController,padding: PaddingValues, isVisible
     var attendanceCount by remember { mutableStateOf(0) }
     val getUserData = db.collection("users")
     var wasVisible by remember { mutableStateOf(false) }
+    fun getMonthRangeStrings(year: Int, month: Int): Pair<String, String> {
+        // Format year and month (month is 1-based in parameters)
+        val monthStr = month.toString()
+
+        // Create start date string (first day of month)
+        val startString = "$year-$monthStr-1"
+
+        // Calculate the last day of the month
+        val calendar = Calendar.getInstance()
+        calendar.set(year, month - 1, 1) // Month is 0-based in Calendar
+        val lastDay = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
+
+        // Create end date string (last day of month)
+        val endString = "$year-$monthStr-$lastDay"
+
+        return Pair(startString, endString)
+    }
     // Get attendance count
     LaunchedEffect(Unit) {
-
         if (currentUser?.id != null) {
             try {
-                val calendar = Calendar.getInstance()
-                val year = calendar.get(Calendar.YEAR)
-                val month = calendar.get(Calendar.MONTH) + 1
-
-                val attendanceQuery = db.collection("users")
-                    .document(currentUser.id)
-                    .collection("attendance")
-                    .whereGreaterThanOrEqualTo("timestamp", Timestamp(Date(year, month, 1)))
-                    .whereEqualTo("status", "present")
-                    .get()
-                    .await()
-
-                // Get user name (now inside the coroutine)
+                // Get user name
                 val userDoc = getUserData.document(currentUser.id).get().await()
                 println(userDoc)
                 if (userDoc != null && userDoc.exists()) {
@@ -85,7 +148,7 @@ fun ProfileScreen(navController: NavController,padding: PaddingValues, isVisible
                     name = "N/A"
                 }
                 wasVisible = true
-                attendanceCount = attendanceQuery.documents.size
+
             } catch (e: Exception) {
                 // Handle error
             }
@@ -93,9 +156,16 @@ fun ProfileScreen(navController: NavController,padding: PaddingValues, isVisible
         wasVisible = isVisible
     }
 
+    // Define the surface color with compatibility fallback
+    val surfaceColor = if (CompatUtils.isNewAndroid) {
+        MaterialTheme.colorScheme.background
+    } else {
+        CompatUtils.backgroundColor
+    }
+
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
+        color = surfaceColor
     ) {
         Column(
             modifier = Modifier
@@ -105,34 +175,50 @@ fun ProfileScreen(navController: NavController,padding: PaddingValues, isVisible
         ) {
             Text(
                 text = "Employee Profile",
-                style = MaterialTheme.typography.headlineMedium,
+                style = if (CompatUtils.isNewAndroid) MaterialTheme.typography.headlineMedium else CompatUtils.headlineMedium,
                 modifier = Modifier.padding(vertical = 16.dp)
             )
 
-            // Profile picture
+            // Profile picture with compatible primary color
+            val primaryColorWithAlpha = if (CompatUtils.isNewAndroid) {
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+            } else {
+                CompatUtils.primaryColor.copy(alpha = 0.1f)
+            }
+
+            val primaryColor = if (CompatUtils.isNewAndroid) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                CompatUtils.primaryColor
+            }
+
             Box(
                 modifier = Modifier
                     .size(120.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                    .background(primaryColorWithAlpha),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Filled.Person,
                     contentDescription = "Profile Picture",
                     modifier = Modifier.size(80.dp),
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = primaryColor
                 )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // User info card
+            // User info card with elevation compatibility
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 16.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                elevation = if (CompatUtils.isNewAndroid) {
+                    CardDefaults.cardElevation(defaultElevation = 2.dp)
+                } else {
+                    CardDefaults.cardElevation(defaultElevation = 2.dp)
+                }
             ) {
                 Column(
                     modifier = Modifier.padding(24.dp)
@@ -143,7 +229,18 @@ fun ProfileScreen(navController: NavController,padding: PaddingValues, isVisible
                         icon = Icons.Filled.Person
                     )
 
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                    if (CompatUtils.isNewAndroid) {
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                    } else {
+                        // Fallback divider using Box
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(1.dp)
+                                .padding(vertical = 12.dp)
+                                .background(Color.LightGray)
+                        )
+                    }
 
                     ProfileInfoRow(
                         label = "Employee ID",
@@ -151,7 +248,18 @@ fun ProfileScreen(navController: NavController,padding: PaddingValues, isVisible
                         icon = Icons.Filled.Badge
                     )
 
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                    if (CompatUtils.isNewAndroid) {
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                    } else {
+                        // Fallback divider using Box
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(1.dp)
+                                .padding(vertical = 12.dp)
+                                .background(Color.LightGray)
+                        )
+                    }
 
                     ProfileInfoRow(
                         label = "Email",
@@ -161,36 +269,31 @@ fun ProfileScreen(navController: NavController,padding: PaddingValues, isVisible
                 }
             }
 
-            // Attendance stats card
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer
-                )
-            ) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "Attendance This Month",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Text(
-                        text = "$attendanceCount days",
-                        style = MaterialTheme.typography.headlineLarge,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                }
+            // Attendance stats card with compatible colors
+            val secondaryContainerColor = if (CompatUtils.isNewAndroid) {
+                MaterialTheme.colorScheme.secondaryContainer
+            } else {
+                CompatUtils.secondaryContainerColor
             }
 
-            // Logout button
+            val onSecondaryContainerColor = if (CompatUtils.isNewAndroid) {
+                MaterialTheme.colorScheme.onSecondaryContainer
+            } else {
+                CompatUtils.onSecondaryContainerColor
+            }
+            // Logout button with compatible colors
+            val errorContainerColor = if (CompatUtils.isNewAndroid) {
+                MaterialTheme.colorScheme.errorContainer
+            } else {
+                CompatUtils.errorContainerColor
+            }
+
+            val onErrorContainerColor = if (CompatUtils.isNewAndroid) {
+                MaterialTheme.colorScheme.onErrorContainer
+            } else {
+                CompatUtils.onErrorContainerColor
+            }
+
             Button(
                 onClick = {
                     coroutineScope.launch {
@@ -204,20 +307,35 @@ fun ProfileScreen(navController: NavController,padding: PaddingValues, isVisible
                     .fillMaxWidth()
                     .height(56.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                    contentColor = MaterialTheme.colorScheme.onErrorContainer
+                    containerColor = errorContainerColor,
+                    contentColor = onErrorContainerColor
                 )
             ) {
-                Icon(Icons.Filled.Logout, contentDescription = "Logout")
+                Icon(CompatUtils.getLogoutIcon(), contentDescription = "Logout")
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Sign Out", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    "Sign Out",
+                    style = if (CompatUtils.isNewAndroid) MaterialTheme.typography.titleMedium else CompatUtils.titleMedium
+                )
             }
         }
     }
 }
 
 @Composable
-fun ProfileInfoRow(label: String, value: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
+fun ProfileInfoRow(label: String, value: String, icon: ImageVector) {
+    val primaryColor = if (CompatUtils.isNewAndroid) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        CompatUtils.primaryColor
+    }
+
+    val onSurfaceVariantColor = if (CompatUtils.isNewAndroid) {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    } else {
+        CompatUtils.onSurfaceVariantColor
+    }
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
@@ -225,7 +343,7 @@ fun ProfileInfoRow(label: String, value: String, icon: androidx.compose.ui.graph
         Icon(
             imageVector = icon,
             contentDescription = label,
-            tint = MaterialTheme.colorScheme.primary,
+            tint = primaryColor,
             modifier = Modifier.size(24.dp)
         )
 
@@ -234,13 +352,13 @@ fun ProfileInfoRow(label: String, value: String, icon: androidx.compose.ui.graph
         Column {
             Text(
                 text = label,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                style = if (CompatUtils.isNewAndroid) MaterialTheme.typography.bodySmall else CompatUtils.bodySmall,
+                color = onSurfaceVariantColor
             )
 
             Text(
                 text = value,
-                style = MaterialTheme.typography.bodyLarge
+                style = if (CompatUtils.isNewAndroid) MaterialTheme.typography.bodyLarge else CompatUtils.bodyLarge
             )
         }
     }

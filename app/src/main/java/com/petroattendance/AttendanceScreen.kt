@@ -4,6 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.location.Location
+import android.os.Build
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.foundation.layout.Column
@@ -15,7 +16,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Home
@@ -148,9 +151,9 @@ class LocationClient(private val context: android.content.Context) {
     }
 }
 
-// Enhanced attendance screen with better UI and continuous location tracking
+@SuppressLint("MissingPermission")
 @Composable
-fun EnhancedAttendanceScreen(navController: NavController,padding: PaddingValues, isVisible: Boolean) {
+fun EnhancedAttendanceScreen(navController: NavController, padding: PaddingValues, isVisible: Boolean) {
     val context = LocalContext.current
     val locationClient = remember { LocationClient(context) }
     val db = remember { FirebaseFirestore.getInstance() }
@@ -169,6 +172,7 @@ fun EnhancedAttendanceScreen(navController: NavController,padding: PaddingValues
     }
     val getUserData = db.collection("users")
     var wasVisible by remember { mutableStateOf(false) }
+
     // Coordinates of the petrol pump
     val petrolPumpLatitude = 21.8704003
     val petrolPumpLongitude = 73.5024621
@@ -305,6 +309,58 @@ fun EnhancedAttendanceScreen(navController: NavController,padding: PaddingValues
         wasVisible = isVisible
     }
 
+    // Define fallback colors for pre-Android 12 devices
+    val isAndroid12OrHigher = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+
+    // Compatibility colors
+    val primaryColor = if (isAndroid12OrHigher) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        Color(0xFF6200EE) // Default primary for older Android
+    }
+
+    val primaryContainerColor = if (isAndroid12OrHigher) {
+        MaterialTheme.colorScheme.primaryContainer
+    } else {
+        Color(0xFFE3F2FD) // Light blue for container backgrounds
+    }
+
+    val onPrimaryContainerColor = if (isAndroid12OrHigher) {
+        MaterialTheme.colorScheme.onPrimaryContainer
+    } else {
+        Color(0xFF001E2E) // Dark text on light container
+    }
+
+    val surfaceVariantColor = if (isAndroid12OrHigher) {
+        MaterialTheme.colorScheme.surfaceVariant
+    } else {
+        Color(0xFFE7E0EC) // Light gray for surface variant
+    }
+
+    val onSurfaceVariantColor = if (isAndroid12OrHigher) {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    } else {
+        Color(0xFF49454F) // Dark gray for text on surface variant
+    }
+
+    val errorContainerColor = if (isAndroid12OrHigher) {
+        MaterialTheme.colorScheme.errorContainer
+    } else {
+        Color(0xFFFFDAD6) // Light red for error container
+    }
+
+    val onErrorContainerColor = if (isAndroid12OrHigher) {
+        MaterialTheme.colorScheme.onErrorContainer
+    } else {
+        Color(0xFF410002) // Dark red for text on error container
+    }
+
+    val errorColor = if (isAndroid12OrHigher) {
+        MaterialTheme.colorScheme.error
+    } else {
+        Color(0xFFB3261E) // Standard error red
+    }
+
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
@@ -312,7 +368,8 @@ fun EnhancedAttendanceScreen(navController: NavController,padding: PaddingValues
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Top app bar replacement
@@ -342,7 +399,7 @@ fun EnhancedAttendanceScreen(navController: NavController,padding: PaddingValues
                     Text(
                         text = dateFormat.format(Calendar.getInstance().time),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = onSurfaceVariantColor
                     )
                 }
             }
@@ -353,7 +410,7 @@ fun EnhancedAttendanceScreen(navController: NavController,padding: PaddingValues
                         .fillMaxWidth()
                         .padding(vertical = 16.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                        containerColor = primaryContainerColor
                     )
                 ) {
                     Column(
@@ -366,20 +423,20 @@ fun EnhancedAttendanceScreen(navController: NavController,padding: PaddingValues
                             imageVector = Icons.Filled.CheckCircle,
                             contentDescription = "Attendance Marked",
                             modifier = Modifier.size(72.dp),
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = primaryColor
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
                             text = "Attendance Marked Successfully",
                             style = MaterialTheme.typography.titleLarge,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                            color = onPrimaryContainerColor
                         )
                         attendanceTime?.let {
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = "Time: $it",
                                 style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                color = onPrimaryContainerColor
                             )
                         }
                     }
@@ -392,9 +449,9 @@ fun EnhancedAttendanceScreen(navController: NavController,padding: PaddingValues
                         .padding(vertical = 16.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = if (isWithinGeofence)
-                            MaterialTheme.colorScheme.primaryContainer
+                            primaryContainerColor
                         else
-                            MaterialTheme.colorScheme.errorContainer
+                            errorContainerColor
                     )
                 ) {
                     Column(
@@ -408,9 +465,9 @@ fun EnhancedAttendanceScreen(navController: NavController,padding: PaddingValues
                             contentDescription = "Location Status",
                             modifier = Modifier.size(64.dp),
                             tint = if (isWithinGeofence)
-                                MaterialTheme.colorScheme.primary
+                                primaryColor
                             else
-                                MaterialTheme.colorScheme.error
+                                errorColor
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
@@ -421,9 +478,9 @@ fun EnhancedAttendanceScreen(navController: NavController,padding: PaddingValues
                             style = MaterialTheme.typography.titleMedium,
                             textAlign = TextAlign.Center,
                             color = if (isWithinGeofence)
-                                MaterialTheme.colorScheme.onPrimaryContainer
+                                onPrimaryContainerColor
                             else
-                                MaterialTheme.colorScheme.onErrorContainer
+                                onErrorContainerColor
                         )
 
                         if (!isWithinGeofence) {
@@ -432,7 +489,7 @@ fun EnhancedAttendanceScreen(navController: NavController,padding: PaddingValues
                                 text = "Please go to the petrol pump to mark your attendance",
                                 style = MaterialTheme.typography.bodyMedium,
                                 textAlign = TextAlign.Center,
-                                color = MaterialTheme.colorScheme.onErrorContainer
+                                color = onErrorContainerColor
                             )
                         }
 
@@ -445,9 +502,9 @@ fun EnhancedAttendanceScreen(navController: NavController,padding: PaddingValues
                                 style = MaterialTheme.typography.bodySmall,
                                 textAlign = TextAlign.Center,
                                 color = if (isWithinGeofence)
-                                    MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                                    onPrimaryContainerColor.copy(alpha = 0.7f)
                                 else
-                                    MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.7f)
+                                    onErrorContainerColor.copy(alpha = 0.7f)
                             )
                         }
                     }
@@ -467,7 +524,7 @@ fun EnhancedAttendanceScreen(navController: NavController,padding: PaddingValues
                             .fillMaxWidth()
                             .padding(vertical = 8.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                            containerColor = surfaceVariantColor
                         )
                     ) {
                         Column(
@@ -479,7 +536,7 @@ fun EnhancedAttendanceScreen(navController: NavController,padding: PaddingValues
                             Text(
                                 text = "Distance from petrol pump",
                                 style = MaterialTheme.typography.titleSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = onSurfaceVariantColor
                             )
 
                             Spacer(modifier = Modifier.height(8.dp))
@@ -511,14 +568,24 @@ fun EnhancedAttendanceScreen(navController: NavController,padding: PaddingValues
                         style = MaterialTheme.typography.titleMedium
                     )
                 } else {
-                    // Button with status indicator
-                    val buttonColor = when {
-                        isWithinGeofence -> ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
+                    // Button with proper compatibility colors
+                    val buttonColors = if (isWithinGeofence) {
+                        ButtonDefaults.buttonColors(
+                            containerColor = primaryColor,
+                            contentColor = Color.White // Ensure text is visible
                         )
-                        else -> ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        ButtonDefaults.buttonColors(
+                            containerColor = if (isAndroid12OrHigher) {
+                                surfaceVariantColor
+                            } else {
+                                Color(0xFF607D8B) // Fallback color for older Android
+                            },
+                            contentColor = if (isAndroid12OrHigher) {
+                                onSurfaceVariantColor
+                            } else {
+                                Color.White
+                            }
                         )
                     }
 
@@ -545,7 +612,7 @@ fun EnhancedAttendanceScreen(navController: NavController,padding: PaddingValues
                             }
                         },
                         enabled = isWithinGeofence && !isLoading,
-                        colors = buttonColor,
+                        colors = buttonColors,
                         modifier = Modifier
                             .height(56.dp)
                             .fillMaxWidth(0.8f)
@@ -567,7 +634,7 @@ fun EnhancedAttendanceScreen(navController: NavController,padding: PaddingValues
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
                             text = error,
-                            color = MaterialTheme.colorScheme.error,
+                            color = errorColor,
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }

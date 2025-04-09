@@ -1,6 +1,7 @@
 package com.petroattendance
 
 import android.content.Context
+import android.os.Build
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -9,12 +10,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -25,6 +30,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -191,6 +197,28 @@ fun LoginScreen(navController: NavController) {
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
+    // Check Android version for compatibility
+    val isAndroid12OrHigher = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+
+    // Define fallback colors for pre-Android 12 devices
+    val primaryColor = if (isAndroid12OrHigher) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        Color(0xFF6200EE) // Default primary for older Android
+    }
+
+    val onPrimaryColor = if (isAndroid12OrHigher) {
+        MaterialTheme.colorScheme.onPrimary
+    } else {
+        Color.White // Default on-primary for older Android
+    }
+
+    val errorColor = if (isAndroid12OrHigher) {
+        MaterialTheme.colorScheme.error
+    } else {
+        Color(0xFFB3261E) // Standard error red
+    }
+
     // Initialize Firebase
     LaunchedEffect(Unit) {
         FirebaseManager.getInstance(context).initialize()
@@ -213,10 +241,12 @@ fun LoginScreen(navController: NavController) {
         }
     }
 
+    // Add scrolling capability for smaller devices
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -235,7 +265,18 @@ fun LoginScreen(navController: NavController) {
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Email,
                 imeAction = ImeAction.Next
-            )
+            ),
+            // For older versions, ensure text fields have proper contrasting colors
+            colors = if (isAndroid12OrHigher) {
+                OutlinedTextFieldDefaults.colors()
+            } else {
+                OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = primaryColor,
+                    unfocusedBorderColor = Color(0xFF757575),
+                    cursorColor = primaryColor,
+                    focusedLabelColor = primaryColor
+                )
+            }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -249,7 +290,18 @@ fun LoginScreen(navController: NavController) {
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Password,
                 imeAction = ImeAction.Done
-            )
+            ),
+            // For older versions, ensure text fields have proper contrasting colors
+            colors = if (isAndroid12OrHigher) {
+                OutlinedTextFieldDefaults.colors()
+            } else {
+                OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = primaryColor,
+                    unfocusedBorderColor = Color(0xFF757575),
+                    cursorColor = primaryColor,
+                    focusedLabelColor = primaryColor
+                )
+            }
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -288,12 +340,27 @@ fun LoginScreen(navController: NavController) {
             enabled = !isLoading && email.isNotBlank() && password.isNotBlank(),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(50.dp)
+                .height(50.dp),
+            // Ensure proper button colors for all Android versions
+            colors = ButtonDefaults.buttonColors(
+                containerColor = primaryColor,
+                contentColor = onPrimaryColor,
+                disabledContainerColor = if (isAndroid12OrHigher) {
+                    MaterialTheme.colorScheme.surfaceVariant
+                } else {
+                    Color(0xFFBDBDBD) // Light gray for disabled state
+                },
+                disabledContentColor = if (isAndroid12OrHigher) {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                } else {
+                    Color(0xFF757575) // Medium gray for disabled text
+                }
+            )
         ) {
             if (isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(24.dp),
-                    color = MaterialTheme.colorScheme.onPrimary
+                    color = onPrimaryColor
                 )
             } else {
                 Text("Login")
@@ -304,7 +371,7 @@ fun LoginScreen(navController: NavController) {
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = it,
-                color = MaterialTheme.colorScheme.error,
+                color = errorColor,
                 style = MaterialTheme.typography.bodyMedium
             )
         }
